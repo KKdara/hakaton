@@ -83,7 +83,10 @@ def main(zip_path: str = "data/knowledge-base.zip",
         print(f"   !!!  Предупреждений: {stats['warnings']}")
     if broken_dost:
         print(f"   !!! Нарушений дословности: {broken_dost}")
-
+        if broken_dost > len(all_chunks) * 0.01:
+            print(f"❌ КРИТИЧНО: нарушений дословности: {broken_dost}", file=sys.stderr)
+            sys.exit(1)
+            
     print(f"\nДокументов с is_outdated=True: {outdated_docs}")
     print(f"Документов с future_changes:   {with_future}")
 
