@@ -1,0 +1,11 @@
+.git
+.env
+.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+*.pyc
+data/embeddings.json
+data/chunks.json
+tests
+node_modules
