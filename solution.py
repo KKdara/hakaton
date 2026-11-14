@@ -155,7 +155,7 @@ def search(query: str, top_k: int = 6) -> list[dict]:
         results["ids"][0], results["documents"][0],
         results["metadatas"][0], results["distances"][0]
     ):
-        score = max(0.0, min(1.0, 1.0 - float(dist) / 2))
+        score = max(0.0, min(1.0, 1.0 - float(dist)))
         chunks.append({"chunk_id": cid, "text": doc, "meta": meta, "score": score})
 
     return sorted(chunks, key=lambda x: x["score"], reverse=True)
