@@ -54,7 +54,7 @@ class Config:
 
     # --- пороги релевантности (ТРЕБУЮТ КАЛИБРОВКИ на реальных вопросах: python -m retrieval.cli) ---
     vector_thresholds: Thresholds = field(default_factory=lambda: Thresholds(
-        high=_f("VEC_HIGH", 0.60), low=_f("VEC_LOW", 0.45)))
+        high=_f("VEC_HIGH", 0.45), low=_f("VEC_LOW",  0.30)))
     rerank_thresholds: Thresholds = field(default_factory=lambda: Thresholds(
         high=_f("RERANK_HIGH", 0.70), low=_f("RERANK_LOW", 0.30)))
 

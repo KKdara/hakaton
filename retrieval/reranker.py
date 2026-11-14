@@ -5,7 +5,10 @@
 Если у платформы другой формат, правится только метод _parse()."""
 from __future__ import annotations
 
+
+
 import httpx
+import logging
 
 from .config import Config
 
@@ -37,15 +40,53 @@ class Reranker:
             raise RerankError("Ответ реранкера неполный или в неожиданном формате")
         return scores  # type: ignore[return-value]
 
+    import logging
+
+# ... внутри твоего класса ...
+
     def score(self, query: str, documents: list[str]) -> list[float]:
         """Возвращает оценки в том же порядке, что documents."""
         key = self.cfg.rerank_api_key or self.cfg.api_key
         headers = {"Authorization": f"Bearer {key}"} if key else {}
-        payload = {"model": self.cfg.rerank_model, "query": query,
-                   "documents": documents, "top_n": len(documents)}
+        payload = {
+            "model": self.cfg.rerank_model,
+            "query": query,
+            "documents": documents,
+            "top_n": len(documents)
+        }
         try:
             r = httpx.post(self._url(), json=payload, headers=headers, timeout=self.cfg.rerank_timeout)
             r.raise_for_status()
             return self._parse(r.json(), len(documents))
-        except httpx.HTTPError as e:
-            raise RerankError(f"Ошибка запроса к реранкеру: {e}") from e
+        except Exception as e:
+            # Логируем ошибку, чтобы ты знал, что сработал фолбэк
+            logging.warning(f"Ошибка основного реранкера ({e}). Переключаюсь на fallback (score_via_chat).")
+            return self.score_via_chat(query, documents)
+
+    def score_via_chat(self, query: str, documents: list[str]) -> list[float]:
+        from openai import OpenAI
+        
+        client = OpenAI(
+            base_url=self.cfg.rerank_base_url or self.cfg.base_url,
+            api_key=self.cfg.rerank_api_key or self.cfg.api_key
+        )
+        scores = []
+        
+        for doc in documents:
+            try:
+                resp = client.chat.completions.create(
+                    model=self.cfg.rerank_model,
+                    max_tokens=5,
+                    messages=[
+                        {"role": "system", "content": "Оцени релевантность документа запросу. Ответь одним числом от 0 до 1."},
+                        {"role": "user", "content": f"Запрос: {query}\n\nДокумент: {doc[:800]}"},
+                    ],
+                )
+                raw = resp.choices[0].message.content.strip()
+                # Берем первое слово, заменяем запятую на точку и конвертируем в float
+                scores.append(float(raw.split()[0].replace(",", ".")))
+            except Exception:
+                # Если модель ответила мусором или упала, ставим 0.0
+                scores.append(0.0)
+                
+        return scores
