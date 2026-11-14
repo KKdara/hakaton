@@ -66,7 +66,6 @@ class Retriever:
             self._reranker = Reranker(self.cfg)
         return self._reranker
 
-    # ------------------------------------------------------------------
     def _search(self, query: str, filters: Optional[dict]) -> list[RetrievedChunk]:
         vec = self._embed(query)
         res = self.collection.query(
@@ -78,7 +77,7 @@ class Retriever:
         out: list[RetrievedChunk] = []
         for cid, doc, meta, dist in zip(res["ids"][0], res["documents"][0],
                                         res["metadatas"][0], res["distances"][0]):
-            sim = max(0.0, min(1.0, 1.0 - float(dist)))  # cosine distance -> similarity
+            sim = max(0.0, min(1.0, 1.0 - float(dist) / 2))
             fc = _clean(meta.get("future_changes"))
             out.append(RetrievedChunk(
                 chunk_id=cid, text=doc, score=sim, vector_score=sim, rerank_score=None,
